@@ -40,7 +40,7 @@ PairPointFF::PairPointFF(LAMMPS *lmp) : Pair(lmp) //
 	writedata = 1; // 
 	cut_global = 0.0; // 
 	required_atoms = 0; // 
-	feature_dims = 4; //
+	feature_dims = 5; //
 }
 
 /* ---------------------------------------------------------------------- */
