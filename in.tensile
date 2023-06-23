@@ -1,0 +1,56 @@
+# Initialization
+clear
+units               metal
+dimension           3
+boundary            p p p
+atom_style          atomic
+read_data           gblmp
+
+# parameter setting 
+variable            temperature equal 300
+variable            dt equal 0.001
+variable            T_P equal 10.0*dt
+variable            P_P equal 500.0*dt
+variable            step equal ntimestep
+variable            Pxx equal "-pxx"
+variable            Pyy equal "-pyy"
+variable            Pzz equal "-pzz"
+variable            Pxy equal "-pxy"
+variable            Pxz equal "-pxz"
+variable            Pyz equal "-pyz"
+
+# Force setting
+pair_style          PointFF 6.0 45
+pair_coeff          * * jit_epoch_37.pth 1.66 1.83 1.88 1.91 2.20
+
+# dynamic setting
+reset_timestep      0
+timestep            ${dt}
+velocity            all create ${temperature} 726381 mom yes rot no
+
+fix                 1 	all npt temp ${temperature} ${temperature} ${T_P} iso 0.0 0.0 ${P_P} drag 1.0
+fix                 2 	all print 100 "$(step) $(temp) $(vol) $(pe) ${Pxx} ${Pyy} ${Pzz} ${Pxy} ${Pxz} ${Pyz}" file ./save/relax_record.dat screen no
+
+dump                1 	all custom 2000 ./dump/dump.* id type x y z
+
+run 10000
+unfix               1
+unfix               2
+undump 				1
+
+ # tensile
+variable            srate   equal   1.0e8
+variable            srate1  equal   "-1*v_srate / 1.0e12"
+variable            tmp     equal   "lz"
+variable            L0      equal   ${tmp}
+variable            strain  equal   "(lz - v_L0)/v_L0"
+ 
+reset_timestep      0
+fix                 1 	all deform 1 z erate ${srate1} remap x units box flip no
+fix                 2 	all npt temp ${temperature} ${temperature} ${T_P} x 0.0 0.0 ${P_P} y 0.0 0.0 ${P_P} drag 1.0
+fix                 3 	all print 100 "$(step) $(temp) $(vol) $(pe) ${Pxx} ${Pyy} ${Pzz} ${Pxy} ${Pxz} ${Pyz} ${strain}" file ./save/tensile_record.dat screen no
+ 
+dump                1 	all custom 2000 ./dump/dump.* id type x y z
+# 
+run 2500000
+
